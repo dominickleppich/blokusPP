@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project name="blokusPP" default="all" basedir=".">
+	<!-- Einstellungen -->
+	<property name="main.class" value="blokusPP.Start" />
+
+	<property name="debuglevel" value="source,lines,vars" />
+	<property name="target.jre" value="1.7" />
+	<property name="source.jre" value="1.7" />
+	<property name="launch4jpath" value="D:/Launch4j" />
+	<property name="launch4jconfigfile" value="release.xml" />
+
+	<property name="source.dir" location="source" />
+	<property name="build.dir" location="build" />
+	<property name="javadoc.dir" location="documentation" />
+	<property name="jar.dir" location="jar" />
+	<property name="project.name" value="blokusPP" />
+	<property name="release.dir" location="release" />
+	<property name="ressource.dir" location="res" />
+	<property name="lib.dir" location="lib" />
+
+	<path id="userclasspath">
+		<fileset dir="${lib.dir}">
+			<include name="**/*.jar" />
+		</fileset>
+	</path>
+
+	<!-- Erzeuge alles -->
+	<target depends="javadoc,build,release" name="all" />
+
+	<!-- Bereinige, entferne kompilierte Daten und erzeugte Jar-Files -->
+	<target name="clean">
+		<delete dir="${build.dir}" />
+		<delete dir="${javadoc.dir}" />
+		<delete dir="${jar.dir}" />
+		<delete dir="${release.dir}" />
+	</target>
+
+	<!-- Erzeuge JavaDoc Dokumentation -->
+	<target description="create javadoc documentation" name="javadoc">
+		<mkdir dir="${javadoc.dir}" />
+		<javadoc access="private" author="true" destdir="${javadoc.dir}" source="1.7" sourcepath="src" version="true">
+			<classpath refid="userclasspath" />
+			<fileset dir="${source.dir}" defaultexcludes="yes">
+				<include name="**/*.java" />
+				<exclude name="blokusPP/test/**" />
+			</fileset>
+		</javadoc>
+	</target>
+
+	<!-- Erzeuge ausfuerbare Datei -->
+	<target description="create exe file" name="exe">
+		<echo message="Creating executable file" />
+		<echo message="Executing ${launch4jpath}/Launch4jc.exe ${launch4jconfigfile}" />
+		<exec executable="${launch4jpath}/Launch4jc.exe">
+			<arg value="${launch4jconfigfile}" />
+		</exec>
+	</target>
+
+	<target description="create zip archive" name="zip">
+		<zip destfile="${release.dir}/${project.name}.zip" basedir="${release.dir}" />
+	</target>
+
+	<!-- Bereite Release vor -->
+	<target description="init release" depends="jar, javadoc" name="release_init">
+		<delete dir="${release.dir}" />
+		<mkdir dir="${release.dir}" />
+		<!-- Kopiere benoetigte Bibliotheken -->
+		<copy todir="${release.dir}/lib">
+			<fileset dir="${lib.dir}">
+				<exclude name="*-javadoc.jar" />
+				<exclude name="*-source*.jar" />
+				<exclude name="*-junit.jar" />
+				<exclude name="*-contrib.jar" />
+			</fileset>
+		</copy>
+		<!-- Kopiere das Spiel -->
+		<copy todir="${release.dir}">
+			<fileset dir="${jar.dir}" />
+		</copy>
+		<!-- Kopiere Quelltext -->
+		<copy todir="${release.dir}/source">
+			<fileset dir="${source.dir}" />
+		</copy>
+		<jar compress="true" destfile="${release.dir}/${project.name}-source.jar" basedir="${release.dir}/source" />
+		<!-- Kopiere Dokumentation -->
+		<copy todir="${release.dir}/documentation">
+			<fileset dir="${javadoc.dir}" />
+		</copy>
+		<jar compress="true" destfile="${release.dir}/${project.name}-javadoc.jar" basedir="${release.dir}/documentation" />
+		<!-- Kopiere Ressourcen -->
+		<copy todir="${release.dir}/res">
+			<fileset dir="${ressource.dir}" />
+		</copy>
+	</target>
+
+	<!-- Erzeuge fertiges Release -->
+	<target depends="release_init" name="release">
+		<!-- <antcall target="exe" /> -->
+
+		<antcall target="zip" />
+	</target>
+
+	<!-- Erzeuge Release, alles in einem Jar -->
+	<target depends="release_init, build" name="release_all_in_one">
+		<mkdir dir="${release.dir}/tmp" />
+		<!-- Entpacke alle Libraries -->
+		<unjar dest="${release.dir}/tmp">
+			<fileset dir="${release.dir}" includes="**/*.jar" />
+		</unjar>
+
+		<!-- Entferne META-INF -->
+		<delete dir="${release.dir}/tmp/META-INF" />
+
+		<jar compress="true" destfile="${release.dir}/${project.name}.jar" basedir="${release.dir}/tmp">
+			<manifest>
+				<attribute name="Main-Class" value="${main.class}" />
+			</manifest>
+		</jar>
+
+		<!-- Entferne Lib und Tmp Ordner -->
+		<delete dir="${release.dir}/lib" />
+		<delete dir="${release.dir}/tmp" />
+
+		<antcall target="exe" />
+
+		<antcall target="zip" />
+	</target>
+
+	<!-- Erzeuge Jar-Archive -->
+	<target description="create jar files" depends="build" name="jar">
+		<mkdir dir="${jar.dir}" />
+		<jar compress="true" destfile="${jar.dir}/${project.name}.jar" basedir="${build.dir}">
+			<manifest>
+				<attribute name="Main-Class" value="${main.class}" />
+				<attribute name="Class-Path" value=". lib/NepsterToolkit.jar" />
+			</manifest>
+		</jar>
+	</target>
+
+
+	<!-- ************************ Kompilieren ************************ -->
+	<!-- Kompiliere das Projekt -->
+	<target description="build the project" name="build">
+		<mkdir dir="${build.dir}" />
+		<javac debug="true" destdir="${build.dir}" srcdir="${source.dir}" includeantruntime="false" source="${source.jre}" target="${target.jre}">
+			<include name="**/*.java" />
+			<!-- Schliesse Testpackage aus -->
+			<exclude name="blokusPP/test/**" />
+			<classpath refid="userclasspath" />
+		</javac>
+	</target>
+
+</project>
